@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"html/template"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -12,10 +14,23 @@ import (
 )
 
 var (
-	kafkaEndpoint = flag.String("kafkaendpoint", "localhost:9092", "Kafka Endpoint")
-	topic         = flag.String("topic", "vehicletraffic", "Kafka Topic")
-	groupid       = flag.String("groupid", "vehicletrafficgid", "Consumer Group")
+	kafkaEndpoint      = flag.String("kafkaendpoint", "localhost:9092", "Kafka Endpoint")
+	topic              = flag.String("topic", "vehicletraffic", "Kafka Topic")
+	groupid            = flag.String("groupid", "vehicletrafficgid", "Consumer Group")
+	serverAddress      = flag.String("serveraddress", "192.168.50.10:8080", "Server Address:port")
+	totalKafkaMessages int
 )
+
+type PageInfo struct {
+	MessagesTotal int
+}
+
+func viewHandler(w http.ResponseWriter, r *http.Request) {
+	tmpl, _ := template.ParseFiles("../../static/index.html")
+	tmpl.Execute(w, PageInfo{
+		MessagesTotal: totalKafkaMessages,
+	})
+}
 
 func main() {
 	flag.Parse()
@@ -27,10 +42,16 @@ func main() {
 			fmt.Print("Got error while consuming topic: ", err)
 		} else {
 			fmt.Printf("Got message %s\n", value)
+			totalKafkaMessages += 1
 		}
 	})
-	wg.Add(1)
 
+	http.HandleFunc("/", viewHandler)
+	if err := http.ListenAndServe(*serverAddress, nil); err != nil {
+		fmt.Println(err)
+	}
+
+	wg.Add(1)
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan,
 		syscall.SIGHUP,

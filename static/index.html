@@ -1,0 +1,37 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+
+setInterval(function(){
+   callAjax();
+}, 1000);
+
+var callAjax = function(){
+  var e = document.getElementById("message");
+  var xhr = new XMLHttpRequest();
+  xhr.onreadystatechange = function() {
+      if (xhr.readyState == 4 && xhr.status == 200) {
+        console.log(xhr.responseText);
+        e.outerHTML = xhr.responseText;
+      }
+  }
+  xhr.open("GET", "/", true);
+  try {
+      xhr.send();
+  } catch (err) {
+      // handle error
+  }
+}
+</script>
+</head>
+<body>
+
+<h1 id="message">Got {{.MessagesTotal}} kafka messages!</h1>
+
+
+</body>
+</html>
+
+
