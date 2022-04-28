@@ -1,15 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
-	"html/template"
-	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 
+	"github.com/alxandru/client-vehicletracking/pkg/http"
 	"github.com/alxandru/client-vehicletracking/pkg/kafka"
 )
 
@@ -21,34 +21,31 @@ var (
 	totalKafkaMessages int
 )
 
-type PageInfo struct {
-	MessagesTotal int
-}
-
-func viewHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, _ := template.ParseFiles("../../static/index.html")
-	tmpl.Execute(w, PageInfo{
-		MessagesTotal: totalKafkaMessages,
-	})
-}
-
 func main() {
 	flag.Parse()
+
 	var wg = &sync.WaitGroup{}
 
+	var events = kafka.Events{}
+	var evDoc kafka.EventDocument
+
 	consumer := kafka.NewConsumer(*kafkaEndpoint, *topic, *groupid)
-	consumer.StartConsumer(func(value string, err error) {
+	consumer.StartConsumer(func(value []byte, err error) {
 		if err != nil {
 			fmt.Print("Got error while consuming topic: ", err)
 		} else {
-			fmt.Printf("Got message %s\n", value)
+			fmt.Printf("Got message %s\n", string(value))
+			if err := json.Unmarshal(value, &evDoc); err != nil {
+				fmt.Println("Unable to parse json: ", err)
+			}
+			events = append(events, evDoc.Event)
 			totalKafkaMessages += 1
 		}
 	})
 
-	http.HandleFunc("/", viewHandler)
-	if err := http.ListenAndServe(*serverAddress, nil); err != nil {
-		fmt.Println(err)
+	server := http.NewHTTPServer(*serverAddress, &events)
+	if err := server.ListenAndServe(); err != nil {
+		fmt.Println("Error while listening: ", err)
 	}
 
 	wg.Add(1)
@@ -66,6 +63,7 @@ func main() {
 			switch s {
 			case syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, os.Interrupt:
 				consumer.StopConsumer()
+				server.Close()
 				return
 			}
 		}

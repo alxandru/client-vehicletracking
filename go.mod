@@ -2,7 +2,10 @@ module github.com/alxandru/client-vehicletracking
 
 go 1.18
 
-require github.com/segmentio/kafka-go v0.4.31
+require (
+	github.com/gorilla/mux v1.8.0
+	github.com/segmentio/kafka-go v0.4.31
+)
 
 require (
 	github.com/klauspost/compress v1.14.2 // indirect

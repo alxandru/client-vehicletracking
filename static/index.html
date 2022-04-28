@@ -6,7 +6,7 @@
 
 setInterval(function(){
    callAjax();
-}, 1000);
+}, 3000);
 
 var callAjax = function(){
   var e = document.getElementById("message");
@@ -23,7 +23,26 @@ var callAjax = function(){
   } catch (err) {
       // handle error
   }
+
+  const myHeaders = new Headers();
+  myHeaders.append('Content-Type', 'application/json');
+  const req = new Request('http://192.168.50.10:8080/events', {
+    method:'GET',
+    headers: myHeaders,
+    mode: 'no-cors',
+    cache: 'default',
+  });
+
+  fetch(req)
+  .then(response => response.json())
+  .then(data => {
+    console.log(data)
+  })
+  .catch(console.error);
 }
+
+
+
 </script>
 </head>
 <body>

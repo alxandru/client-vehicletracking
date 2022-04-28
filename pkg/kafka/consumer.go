@@ -9,7 +9,7 @@ import (
 	kafkago "github.com/segmentio/kafka-go"
 )
 
-type Callback func(value string, err error)
+type Callback func(value []byte, err error)
 
 var (
 	ctx    context.Context
@@ -60,9 +60,9 @@ func (c *Consumer) run(cb Callback) {
 		fmt.Println("Reading Message")
 		m, err := c.kreader.ReadMessage(ctx)
 		if err != nil {
-			cb("", err)
+			cb(nil, err)
 			return
 		}
-		cb(string(m.Value), err)
+		cb(m.Value, err)
 	}
 }
