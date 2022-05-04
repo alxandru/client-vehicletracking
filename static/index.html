@@ -5,9 +5,6 @@
 
 <script src="https://d3js.org/d3.v6.js"></script>
 
-<!-- <script src="https://cdn.jsdelivr.net/npm/d3-path@3"></script>
-<script src="https://cdn.jsdelivr.net/npm/d3-chord@3"></script> -->
-
 <h1 id="message" style="color:rgb(241, 241, 241); font-size: 44;">Kafka Messages: {{.MessagesTotal}} </h1>
 
 <div id="my_dataviz"></div>
@@ -105,11 +102,9 @@ var callAjax = function(){
 
 callAjax();
 
-// const chord = d3.chord(crossings);
-
 const width = 964;
 const height = 964; 
-const innerRadius = 258;
+const innerRadius = 352;
 const outerRadius = 362;
 
 // create the svg area
@@ -148,6 +143,8 @@ data = {
   nameByIndex: {0:"N", 1:"NE", 2:"SE", 3:"SV", 4:"NV"},
 };
 
+formatValue = x => `${x.toFixed(0)} vehicles`
+
 // 4 groups, so create a vector of 4 colors
 // const colors = [ "#ffaf49", "#f186c0", "#d602ee", "#916eff", "#aaf255"]
 const colors = [ "#335c67", "#fff3b0", "#e09f3e", "#9e2a2b", "#540b0e"]
@@ -163,7 +160,7 @@ const group = svg.datum(res)
   .append("g")
   .selectAll("g")
   .data(function(d) { return d.groups; })
-  .join("g")
+  .join("g");
 
 group.append("path")
     .style("fill", (d,i) => colors[i])
@@ -183,14 +180,21 @@ const links = svg.datum(res)
   .data(function(d) { return d; })
   .enter()
   .append("path")
-    .attr("d", d3.ribbon()
-      .radius(innerRadius)
+    // .attr("d", d3.ribbon()
+    //   .radius(innerRadius)
+    // )
+    .attr("d", d3.ribbonArrow()
+      .radius(innerRadius - 0.5)
+      .padAngle(1/innerRadius)
     )
     .style("fill", function(d){ return(colors[d.source.index]) })
     .style("stroke", function(d){ return(d3.rgb(colors[d.source.index]).darker()) })
     .attr("index", (d) => d.source.index)
-    .on("mouseover", onMouseOver)
+    .on("mouseover", onMouseOver) 
     .on("mouseout", onMouseOut);
+
+links.append("title")
+      .text(d => `${data.nameByIndex[d.source.index]} => ${data.nameByIndex[d.target.index]}: ${formatValue(d.source.value)}`);
 
 group.append("text")
   .each(d => { d.angle = (d.startAngle + d.endAngle) / 2; })
@@ -203,6 +207,11 @@ group.append("text")
   .attr("text-anchor", d => d.angle > Math.PI ? "end" : null)
   .style("fill", "rgb(241, 241, 241)")
   .text(d => data.nameByIndex[d.index]);
+
+group.append("title")
+.text(d => `${data.nameByIndex[d.index]}
+ Entry: ${formatValue(d3.sum(data.matrix[d.index]))}
+ Exit:  ${formatValue(d3.sum(data.matrix, row => row[d.index]))}`);
 
 function onMouseOver(selected) {
   group      
