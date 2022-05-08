@@ -25,9 +25,7 @@ func main() {
 	flag.Parse()
 
 	var wg = &sync.WaitGroup{}
-
-	var events = kafka.Events{}
-	var evDoc kafka.EventDocument
+	var response = &kafka.Response{}
 
 	consumer := kafka.NewConsumer(*kafkaEndpoint, *topic, *groupid)
 	consumer.StartConsumer(func(value []byte, err error) {
@@ -35,15 +33,16 @@ func main() {
 			fmt.Print("Got error while consuming topic: ", err)
 		} else {
 			fmt.Printf("Got message %s\n", string(value))
-			if err := json.Unmarshal(value, &evDoc); err != nil {
+			evDoc := &kafka.EventDocument{}
+			if err := json.Unmarshal(value, evDoc); err != nil {
 				fmt.Println("Unable to parse json: ", err)
 			}
-			events = append(events, evDoc.Event)
+			response.Events = append(response.Events, evDoc)
 			totalKafkaMessages += 1
 		}
 	})
 
-	server := http.NewHTTPServer(*serverAddress, &events)
+	server := http.NewHTTPServer(*serverAddress, response)
 	if err := server.ListenAndServe(); err != nil {
 		fmt.Println("Error while listening: ", err)
 	}

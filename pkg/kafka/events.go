@@ -10,4 +10,6 @@ type EventDocument struct {
 	Event Event `json:"event"`
 }
 
-type Events []Event
+type Response struct {
+	Events []*EventDocument
+}

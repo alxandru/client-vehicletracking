@@ -1,15 +1,16 @@
-// setInterval(function(){
-//    callServer();
-// }, 3000);
+setInterval(function(){
+   callServer();
+}, 3000);
 
-
-var crossings = Array(5).fill(0).map(()=>Array(5).fill(0))
+var crossings = Array(5).fill(0).map(()=>Array(5).fill(0));
               // N-Exit, NE-Exit, SE-Exit, SV-Exit, NV-Exit
   // N-Entry      0       0         0       0         0
   // NE-Entry     0       0         0       0         0
   // SE-Entry     0       0         0       0         0
   // SV-Entry     0       0         0       0         0
   // NV-Entry     0       0         0       0         0
+
+var lengthEvents = 0;
 
 function getLCIdxFromString(crossing) {
   let pos = crossing.search("-");
@@ -34,36 +35,7 @@ function getLCIdxFromString(crossing) {
   }
 }
 
-function getLCFromIdx(idx) {
-  if (idx == 0) {
-    return "N";
-  } else if (idx == 1) {
-    return "NE";
-  } else if (idx == 2) {
-    return "SE";
-  } else if (idx == 3) {
-    return "SV";
-  } else if (idx == 4) {
-    return "NV";
-  }
-  return "";
-}
-
 function callServer(){
-  // var e = document.getElementById("message");
-  // var xhr = new XMLHttpRequest();
-  // xhr.onreadystatechange = function() {
-  //     if (xhr.readyState == 4 && xhr.status == 200) {
-  //       console.log(xhr.responseText);
-  //       e.outerHTML = xhr.responseText;
-  //     }
-  // }
-  // xhr.open("GET", "/", true);
-  // try {
-  //     xhr.send();
-  // } catch (err) {
-  //     // handle error
-  // }
 
   const myHeaders = new Headers();
   myHeaders.append('Content-Type', 'application/json');
@@ -77,15 +49,29 @@ function callServer(){
   fetch(req)
   .then(response => response.json())
   .then(data => {
+    //console.log(data)
+    lengthEvents = 0
     let dataObj = JSON.parse(data);
-    for (const event of dataObj.events) {
-      console.log(event);
-      console.log(getLCIdxFromString(event.entry)); console.log(getLCIdxFromString(event.exit));
-      crossings[getLCIdxFromString(event.entry)][getLCIdxFromString(event.exit)]++;
+    if (!(Symbol.iterator in Object(dataObj.Events))) {
+      console.log("not iterable");
+      return;
     }
-    buildChordDiagram()
+    crossings = Array(5).fill(0).map(()=>Array(5).fill(0));
+    for (const el of dataObj.Events) {
+      // console.log(el.event);
+      // console.log(getLCIdxFromString(el.event.entry)); console.log(getLCIdxFromString(el.event.exit));
+      crossings[getLCIdxFromString(el.event.entry)][getLCIdxFromString(el.event.exit)]++;
+      lengthEvents++;
+    }
+    setEventsLength();
+    buildChordDiagram();
   })
   .catch(console.error);
+}
+
+function setEventsLength()
+{
+  d3.select("h1").text(`Kafka Messages: ${lengthEvents}`);
 }
 
 function buildChordDiagram()
@@ -96,6 +82,8 @@ function buildChordDiagram()
   const outerRadius = 362;
   formatValue = x => `${x.toFixed(0)} vehicles`
 
+  d3.select("svg").remove()
+
   // create the svg area
   const svg = d3.select("#my_dataviz")
     .append("svg")
@@ -105,7 +93,7 @@ function buildChordDiagram()
       .style("width", "100%")
       .style("height", "auto")
     .append("g")
-      //.attr("transform", "translate(220,220)")
+      .attr("transform", "rotate(-70)")
 
   // create a matrix
   // const matrix = [
