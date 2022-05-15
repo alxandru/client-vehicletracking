@@ -1,6 +1,6 @@
 setInterval(function(){
    callServer();
-}, 3000);
+}, 1000);
 
 var crossings = Array(5).fill(0).map(()=>Array(5).fill(0));
               // N-Exit, NE-Exit, SE-Exit, SV-Exit, NV-Exit
@@ -93,7 +93,7 @@ function buildChordDiagram()
       .style("width", "100%")
       .style("height", "auto")
     .append("g")
-      .attr("transform", "rotate(-70)")
+      // .attr("transform", "rotate(-70)")
 
   // create a matrix
   // const matrix = [
@@ -110,12 +110,11 @@ function buildChordDiagram()
     nameByIndex: {0:"N", 1:"NE", 2:"SE", 3:"SV", 4:"NV"},
   };
 
-  // 4 groups, so create a vector of 4 colors
   const colors = [ "#335c67", "#fff3b0", "#e09f3e", "#9e2a2b", "#540b0e"]
 
   // give this matrix to d3.chord(): it will calculates all the info we need to draw arc and ribbon
   const res = d3.chord()
-      .padAngle(0.05)
+      .padAngle(0.10)
       .sortSubgroups(d3.descending)
       (data.matrix)
 
@@ -140,16 +139,13 @@ function buildChordDiagram()
   // Add the links between groups
   const links = svg.datum(res)
     .append("g")
-    .selectAll("path")
+    .selectAll()
     .data(function(d) { return d; })
     .enter()
     .append("path")
-      // .attr("d", d3.ribbon()
-      //   .radius(innerRadius)
-      // )
       .attr("d", d3.ribbonArrow()
         .radius(innerRadius - 0.5)
-        .padAngle(1/innerRadius)
+        .padAngle(1/innerRadius*25)
       )
       .style("fill", function(d){ return(colors[d.source.index]) })
       .style("stroke", function(d){ return(d3.rgb(colors[d.source.index]).darker()) })
